@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>Simple sample - gin samples</title>
+</head>
+<body style="margin:0px; padding:0px;">
+<div id="startPage" style="display:none">Welcome to Web O2!<br>
+    Press Enter To Start!
+</div>
+<div id="device" style="background: #111" ></div>
+<script type="text/javascript" src="gin.js"></script>
+<script type="text/javascript" src="back.js"></script>
+<script type="text/javascript">
+
+$G('device', {
+    width: 600,
+    height: 600,
+    fps: 32,
+}, {
+    start: function() {
+        var audio = new Audio();
+        audio.src = 'back.mp3';
+
+        console.log(JSON.stringify(bms.frames));
+        initFrame = 155;
+        activeNotes = {}
+        for(var f in bms.frames) {
+            if (f <= initFrame) activeNotes[f] = bms.frames[f];
+        }
+        this
+        .data('keyLightHeight', 10)
+        .data('singleNoteHeight', 6)
+        .data('activeNotes', activeNotes)
+        .data('frame', initFrame)
+        .data('audio', audio)
+        .data('colorDelta', 8)
+        .data('gameState',0);
+    },
+    render: function(e) {
+     
+        var keySettings = [0x53, 0x44, 0x46, 0x20, 0x4a, 0x4b, 0x4c]; //'d', 'f', 'g', ' ', 'j', 'k', 'l' 
+        var ctx = e.context,
+            audio = this.data('audio'),
+            keyLightHeight = this.data('keyLightHeight'),
+            singleNoteHeight = this.data('singleNoteHeight'),
+            activeNotes = this.data('activeNotes'),
+            gameState = this.data('gameState'),
+            frame = this.data('frame');
+
+
+//audio.pause();
+
+// audio.currentTime = 0;
+// audio.play();
+        
+        ctx.save();
+        ctx.clearRect(0, 0, this.width(), this.height());
+
+         if(gameState===0){
+            console.log("Game not stated");
+            ctx.fillStyle    = '#00F';
+            ctx.font         = 'bold 20px sans-serif';
+            ctx.textBaseline = 'top';
+            ctx.fillText  ('Welcome to Web O2! Press Enter To Start! ', 80, 200)
+
+            if(e.keyState[13]){
+                // show message to press enter.
+               // $("#startPage").hide();
+                document.getElementById('startPage').style.display="none";//"display:none";
+                var ctx = e.context;
+                gameState = 1;
+                console.log("Game start now");
+                audio.play();
+            } else {
+                return;
+            }
+        }
+      
+         color = ['#C0C0C0', '#0000A0', '#C0C0C0', '#FF8040', '#C0C0C0', '#0000A0', '#C0C0C0'];
+         color_rgba = ['rgba(192, 192, 192, 0.5)', 'rgba(0, 0, 160, 0.5)', 'rgba(192, 192, 192, 0.5)', 'rgba(255, 128, 64, 0.5)', 'rgba(192, 192, 192, 0.5)', 'rgba(0, 0, 160, 0.5)', 'rgba(192, 192, 192, 0.5)'];
+
+        blockSize = keySettings.length;
+        blockWidth = this.width() / blockSize;
+        for (var i=0; i<blockSize; i++) {
+          keyCode = keySettings[i];
+
+          if (e.keyState[keyCode]) {
+                  var x1 = i * blockWidth,
+                      y1 = this.height() / 2,
+                      x2 = (i + 1) * blockWidth,
+                      y2 = this.height();
+                  // lynn
+                  var gradient = ctx.createLinearGradient(x1, y1, x2, y2);
+                  gradient.addColorStop(0,'rgba(17, 17, 17, 0.5)');
+                  gradient.addColorStop(1, color_rgba[i]);
+                  ctx.fillStyle=gradient;
+
+                  //ctx.fillRect(i*blockWidth, this.width() - keyLightHeight, blockWidth, keyLightHeight);
+                  // lynn
+                  ctx.fillRect(x1, y1, blockWidth,300);
+                  // end lynn
+          }
+        }
+        if (bms.frames[frame]) {
+          activeNotes[frame] = bms.frames[frame]
+        }
+        if (console) {
+          var str = JSON.stringify(e.keyState);
+          if (str != '{}')
+          console.log(JSON.stringify(e.keyState));
+          if (activeNotes.length) console.log(JSON.stringify(activeNotes));
+        }
+        
+        newNotes =  {}
+        for (var i in activeNotes) {
+          height = (frame - i)*6.5;
+          if (height >= 0 && height + singleNoteHeight <= this.height()) {
+            for(var p in activeNotes[i]) {
+              keyMap = {16:0,11:1,12:2,13:3,14:4,15:5,18:6};
+              if ((p>=11 && p<=15) || (p>=18 && p<=19)) {
+                pos = keyMap[p]
+              }
+              else {
+                continue;
+              }
+              if (pos >= 0 && pos < 7) {
+                ctx.fillStyle   = color[pos];
+                ctx.fillRect(blockWidth*pos, height, blockWidth, singleNoteHeight);
+              }
+            }
+            newNotes[i] = activeNotes[i]
+          }
+        }
+        ctx.stroke();
+        ctx.restore();
+        
+        this
+        .data('frame', (frame + 1) )
+        .data('gameState', gameState )
+        .data('activeNotes', newNotes );
+    }
+})
+;
+
+</script>
+</body>
+</html>
